@@ -1,7 +1,6 @@
 package md.hajji.springkafkastreams.utils;
 
 import md.hajji.springkafkastreams.records.PageEvent;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
