@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: spring-kafka-streams
+
+  cloud:
+    stream:
+      bindings:
+        pageEventConsumer-in-0:
+          destination: T1
+
+        pageEventSupplier-out-0:
+          destination: T2
+
+        pageEventFunction-in-0:
+          destination: T2
+        pageEventFunction-out-0:
+          destination: T3
+
+        kStreamFunction-in-0:
+          destination: T2
+
+        kStreamFunction-out-0:
+          destination: T4
+
+
+    function:
+      definition: pageEventConsumer; pageEventSupplier;pageEventFunction;kStreamFunction
+
+  integration:
+    poller:
+      initial-delay: 5000
+      fixed-delay: 3000
+      max-messages-per-poll: 2
+  kafka:
+    streams:
+      properties:
+        commit.interval.ms: 100
+
+
+
+
+
+
