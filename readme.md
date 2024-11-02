@@ -411,7 +411,7 @@ basic transformer like we say in previous section:
                      .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                      // create a time window (Tumbling windows)  of 7 sc
                      // like a micro-batch:
-                     .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMillis(7000)))
+                     .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(7)))
                      // use aggregation (count) over collected records during time frame
                      // save count state in a state store called 'page-analytics' (used later):
                      .count(Materialized.as("page-analytics"))
@@ -450,7 +450,7 @@ spring:
 in this section we create an endpoint to keep tracking changes in real time, using server send events:
 
 ```java
-@GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+@GetMapping(path = "analytics", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 public Flux<Map<String, Long>> getPageEvents() {
     // every second server will send a result:
     return Flux.interval(Duration.ofSeconds(1))
@@ -467,7 +467,7 @@ private Map<String, Long> countUntilInstant(Instant instant){
                     "page-analytics",
                     QueryableStoreTypes.windowStore())
             // get all records within state store from instant - 5s to instant:
-            .fetchAll(instant.minusSeconds(5), instant)
+            .fetchAll(instant.minusSeconds(7), instant)
             // for every key value item save key value and value:
             .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
     return pageCountMap;
@@ -481,4 +481,58 @@ private Map<String, Long> countUntilInstant(Instant instant){
 
 ### UI dashboard
 
+in this section we expose an endpoint `localhost:8080` as default, 
+by creating  html file under `static resource` folder:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/smoothie/1.34.0/smoothie.min.js"></script>
+</head>
+<body>
+<canvas id="chart2" width="600" height="400"></canvas>
+<script>    var index = -1;
+randomColor = function () {
+    ++index;
+    if (index >= colors.length) index = 0;
+    return colors[index];
+}
+var pages = ["costumers", "products", "categories", "orders", "bills"];
+var colors = [
+    {sroke: 'rgba(0, 255, 0, 1)', fill: 'rgba(0, 255, 0, 0.2)'},
+    {sroke: 'rgba(255, 0, 0, 1)', fill: 'rgba(255, 0, 0, 0.2)'},
+    {sroke: 'rgba(245, 0, 255, 1)', fill: 'rgba(245, 0, 255, 0.2)'},
+    {sroke: 'rgba(0, 0, 255, 1)', fill: 'rgba(0, 0, 255, 0.2)'},
+    {sroke: 'rgba(243, 250, 1, 1)', fill: 'rgba(243, 250, 1, 0.2)'},
+];
+var courbe = [];
+var smoothieChart = new SmoothieChart({tooltip: true});
+smoothieChart.streamTo(document.getElementById("chart2"), 500);
+pages.forEach(function (v) {
+    courbe[v] = new TimeSeries();
+    col = randomColor();
+    smoothieChart.addTimeSeries(courbe[v], {strokeStyle: col.sroke, fillStyle: col.fill, lineWidth: 2});
+});
+var stockEventSource = new EventSource("/pages/analytics");
+stockEventSource.addEventListener("message", function (event) {
+    pages.forEach(function (v) {
+        val = JSON.parse(event.data)[v];
+        courbe[v].append(new Date().getTime(), val);
+    });
+});</script>
+</body>
+</html>d
+```
+we notice that we modify `commit-interval-ms` property to `2 seconds` in `application.yml` file,
+to get more results before state store be flushed
+
+##### Results
+
+![final-results-1](./screens/final-1.png)
+
+
+![final-results-1](./screens/final-2.png)
 

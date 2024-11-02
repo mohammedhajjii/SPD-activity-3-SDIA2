@@ -57,7 +57,7 @@ public class PageEventService {
                      .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                      // create a time window (Tumbling windows)  of 7 sc
                      // like a micro-batch:
-                     .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMillis(7000)))
+                     .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(7)))
                      // use aggregation (count) over collected records during time frame
                      // save count state in a state store called 'page-analytics' (used later):
                      .count(Materialized.as("page-analytics"))

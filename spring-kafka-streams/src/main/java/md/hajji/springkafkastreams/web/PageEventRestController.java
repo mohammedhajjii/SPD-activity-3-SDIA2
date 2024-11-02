@@ -39,7 +39,7 @@ public class PageEventRestController {
         return ResponseEntity.badRequest().build();
     }
 
-    @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(path = "analytics", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Map<String, Long>> getPageEvents() {
         // every second server will send a result:
         return Flux.interval(Duration.ofSeconds(1))
@@ -55,8 +55,8 @@ public class PageEventRestController {
                 .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
                         "page-analytics",
                         QueryableStoreTypes.windowStore())
-                // get all records within state store from instant - 5s to instant:
-                .fetchAll(instant.minusSeconds(5), instant)
+                // get all records within state store from instant - 7s to instant:
+                .fetchAll(instant.minusSeconds(7), instant)
                 // for every key value item save key value and value:
                 .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
         return pageCountMap;

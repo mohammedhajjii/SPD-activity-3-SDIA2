@@ -54,7 +54,7 @@ spring:
       properties:
         # interval time that kafka should flush state store
         # and persist results in destination KTable
-        commit.interval.ms: 100
+        commit.interval.ms: 2000
 
 
 
