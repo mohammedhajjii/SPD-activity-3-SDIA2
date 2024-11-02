@@ -41,19 +41,23 @@ public class PageEventRestController {
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Map<String, Long>> getPageEvents() {
-
+        // every second server will send a result:
         return Flux.interval(Duration.ofSeconds(1))
-                .map(tick -> countFromInstant(Instant.now()));
+                .map(tick -> countUntilInstant(Instant.now()));
 
     }
 
-    private Map<String, Long> countFromInstant(Instant instant){
+    private Map<String, Long> countUntilInstant(Instant instant){
+        // create initial state that hold results:
         Map<String, Long> pageCountMap = new HashMap<>();
         interactiveQueryService
+                // get state store
                 .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
                         "page-analytics",
                         QueryableStoreTypes.windowStore())
+                // get all records within state store from instant - 5s to instant:
                 .fetchAll(instant.minusSeconds(5), instant)
+                // for every key value item save key value and value:
                 .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
         return pageCountMap;
     }
