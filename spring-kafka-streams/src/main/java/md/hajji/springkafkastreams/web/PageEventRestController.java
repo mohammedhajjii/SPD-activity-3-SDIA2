@@ -60,19 +60,12 @@ public class PageEventRestController {
                             "page-analytics",
                                     QueryableStoreTypes.windowStore())
                             .fetchAll(now.minusSeconds(5), now)
-                            .forEachRemaining(windowedKeyValue -> save(windowedKeyValue, pageCountMap));
+                            .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
                     return pageCountMap;
                 });
 
 
     }
 
-    private void save(KeyValue<Windowed<String>, Long> windowedLongKeyValue, Map<String, Long> pageCountMap){
-
-        if (windowedLongKeyValue.key.key() instanceof String key
-                && windowedLongKeyValue.value instanceof Long value) {
-            pageCountMap.put(key, value);
-        }
-    }
 
 }
