@@ -451,33 +451,23 @@ in this section we create an endpoint to keep tracking changes in real time, usi
 
 ```java
 @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<Map<String, Long>> getPageEvents() {
+public Flux<Map<String, Long>> getPageEvents() {
 
-        return Flux.interval(Duration.ofSeconds(1))
-                .map(tick -> {
-                    Map<String, Long> pageCountMap = new HashMap<>();
+    return Flux.interval(Duration.ofSeconds(1))
+            .map(tick -> countFromInstant(Instant.now()));
 
-                    Instant now = Instant.now();
+}
 
-                    interactiveQueryService
-                            .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
-                            "page-analytics",
-                                    QueryableStoreTypes.windowStore())
-                            .fetchAll(now.minusSeconds(5), now)
-                            .forEachRemaining(windowedKeyValue -> save(windowedKeyValue, pageCountMap));
-                    return pageCountMap;
-                });
-
-        
-    }
-
-    private void save(KeyValue<Windowed<String>, Long> windowedLongKeyValue, Map<String, Long> pageCountMap){
-
-        if (windowedLongKeyValue.key.key() instanceof String key
-                && windowedLongKeyValue.value instanceof Long value) {
-            pageCountMap.put(key, value);
-        }
-    }
+private Map<String, Long> countFromInstant(Instant instant){
+    Map<String, Long> pageCountMap = new HashMap<>();
+    interactiveQueryService
+            .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
+                    "page-analytics",
+                    QueryableStoreTypes.windowStore())
+            .fetchAll(instant.minusSeconds(5), instant)
+            .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
+    return pageCountMap;
+}
 ```
 
 ##### Results

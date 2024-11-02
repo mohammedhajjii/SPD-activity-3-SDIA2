@@ -1,15 +1,9 @@
 package md.hajji.springkafkastreams.web;
 
 import lombok.RequiredArgsConstructor;
-import md.hajji.springkafkastreams.records.PageEvent;
 import md.hajji.springkafkastreams.utils.PageEventFactory;
-import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyWindowStore;
-import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
 import org.springframework.cloud.stream.binder.kafka.streams.InteractiveQueryService;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.http.MediaType;
@@ -24,7 +18,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 @RestController
 @RequestMapping(path = "/pages")
@@ -50,21 +43,19 @@ public class PageEventRestController {
     public Flux<Map<String, Long>> getPageEvents() {
 
         return Flux.interval(Duration.ofSeconds(1))
-                .map(tick -> {
-                    Map<String, Long> pageCountMap = new HashMap<>();
+                .map(tick -> countFromInstant(Instant.now()));
 
-                    Instant now = Instant.now();
+    }
 
-                    interactiveQueryService
-                            .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
-                            "page-analytics",
-                                    QueryableStoreTypes.windowStore())
-                            .fetchAll(now.minusSeconds(5), now)
-                            .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
-                    return pageCountMap;
-                });
-
-
+    private Map<String, Long> countFromInstant(Instant instant){
+        Map<String, Long> pageCountMap = new HashMap<>();
+        interactiveQueryService
+                .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
+                        "page-analytics",
+                        QueryableStoreTypes.windowStore())
+                .fetchAll(instant.minusSeconds(5), instant)
+                .forEachRemaining(wkv -> pageCountMap.put(wkv.key.key(), wkv.value));
+        return pageCountMap;
     }
 
 
