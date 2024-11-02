@@ -43,7 +43,6 @@ public class PageEventRestController {
         if (streamBridge.send(topic, pageEvent)) {
             return  ResponseEntity.ok(pageEvent);
         }
-
         return ResponseEntity.badRequest().build();
     }
 
@@ -53,23 +52,27 @@ public class PageEventRestController {
         return Flux.interval(Duration.ofSeconds(1))
                 .map(tick -> {
                     Map<String, Long> pageCountMap = new HashMap<>();
-                    ReadOnlyWindowStore<String, Long> queryableStore =
-                            interactiveQueryService.getQueryableStore("page-analytics", QueryableStoreTypes.windowStore());
 
                     Instant now = Instant.now();
 
-                    KeyValueIterator<Windowed<String>, Long> iterator =
-                            queryableStore.fetchAll(now.minusSeconds(5), now);
-
-                    while (iterator.hasNext()) {
-                        KeyValue<Windowed<String>, Long> next = iterator.next();
-                        pageCountMap.put(next.key.key(), next.value);
-                    }
+                    interactiveQueryService
+                            .<ReadOnlyWindowStore<String, Long>>getQueryableStore(
+                            "page-analytics",
+                                    QueryableStoreTypes.windowStore())
+                            .fetchAll(now.minusSeconds(5), now)
+                            .forEachRemaining(windowedKeyValue -> save(windowedKeyValue, pageCountMap));
                     return pageCountMap;
                 });
 
 
+    }
 
+    private void save(KeyValue<Windowed<String>, Long> windowedLongKeyValue, Map<String, Long> pageCountMap){
+
+        if (windowedLongKeyValue.key.key() instanceof String key
+                && windowedLongKeyValue.value instanceof Long value) {
+            pageCountMap.put(key, value);
+        }
     }
 
 }

@@ -1,39 +1,59 @@
 spring:
+  # specify the application name:
   application:
     name: spring-kafka-streams
 
   cloud:
     stream:
+      # binding consumers, producers, transformers to specific Topic
+      # by defining message channels and
+      # their input(read source) topic
+      # their output(write destination) topic
       bindings:
+
+        # T1 -----<Channel>----> pageEventConsumer
         pageEventConsumer-in-0:
           destination: T1
 
+        # pageEventSupplier -----<Channel>----> T2
         pageEventSupplier-out-0:
           destination: T2
 
+        # T2 -----<Channel>----> pageEventFunction
         pageEventFunction-in-0:
           destination: T2
+        # pageEventFunction -----<Channel>----> T3
         pageEventFunction-out-0:
           destination: T3
 
+        # T2 -----<Channel>----> kStreamFunction
         kStreamFunction-in-0:
           destination: T2
 
+        # kStreamFunction -----<Channel>----> T4
         kStreamFunction-out-0:
           destination: T4
 
-
+    # let spring cloud streams recognize our
+    # beans as kafka subscriber/publisher:
     function:
       definition: pageEventConsumer; pageEventSupplier;pageEventFunction;kStreamFunction
 
   integration:
+    # setting poller (suppliers):
     poller:
+      # waiting delay before start producing:
       initial-delay: 5000
+      # produce rate (for each 3 seconds):
       fixed-delay: 3000
+      # records quantity that will be produced every time:
       max-messages-per-poll: 2
+
   kafka:
     streams:
       properties:
+        # interval time that kafka should flush state store
+        # and persist results in destination KTable
         commit.interval.ms: 100
 
 
